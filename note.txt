@@ -1,5 +1,0 @@
-Optimize:
-- Add sizes of images and edit the movement of Enemy
-- Boss movement edit
-- Make it more difficult to win
-- Free memory

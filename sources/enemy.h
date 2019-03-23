@@ -38,6 +38,7 @@ public:
     EnemyType type;
 public:
     Enemy() { this->isBlowingUp = 0; this->shootCountdown = 700.0f; this->attackCountDown = 120.0f; }
+    ~Enemy() { destroyedSound.play(); }
 
     bool canAttackPlayer() { return (this->attackCountDown <= 0 ? true : false); }
     void countDownAttack() { this->attackCountDown -= 400*TPF; }
@@ -49,24 +50,24 @@ class DarkSoldier : public Enemy
 {
 public:
     void move();
-    void shoot(int shot);
+    void shoot(int shot, sf::Color bulletColor);
 
     bool canAttackPlayer() { return false; }
     void attack(Player &target) {};
 
-	DarkSoldier(sf::Vector2f pos);
+	DarkSoldier(sf::Vector2f pos, sf::Sprite sprite, sf::Vector2f newVelocity, int HP);
 };
 
 class Boss : public Enemy
 {
 public:
     void move();
-    void shoot(int shot);
+    void shoot(int shot, sf::Color bulletColor);
 
     bool canAttackPlayer();
     void attack(Player &target);
 
-    Boss(sf::Vector2f pos);
+    Boss(sf::Vector2f pos, sf::Sprite sprite, sf::Vector2f newVelocity, int HP);
 };
 
 typedef std::vector<Enemy*> Enemies;

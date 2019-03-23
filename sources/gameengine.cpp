@@ -34,15 +34,10 @@ Contact:
 void modifyScore(sf::Text &txt, int score);
 void modifyFPS(sf::Text &fpsCounter, int FPS);
 void gameOver(sf::RenderWindow &GameWindow);
-
 void standardHandleEvent(sf::RenderWindow &window);
+void generateEnemies(Enemies &enemies, sf::Clock &gameClock, int &bossCreated, bool &isFightingWithBoss);
 
-void generateEnemies(Enemies &enemies, sf::Clock &gameClock, int &bossCreated);
-
-float FPS = 1;
-float TPF = 1;
-
-void createGame()
+void createGame(sf::RenderWindow &GameWindow)
 {
     sf::Clock gameClock;
     //The score parameter
@@ -62,17 +57,19 @@ void createGame()
     float score = 0;
     int level = 0;
     bool isLost = false;
+
     int bossCreated = 0;
+    bool isFightingWithBoss = false;
+
     float EnemyShootCount = 0.0f;
     float modifyFPScount = 0.0f;
 
-    std::cout << "Player's HP: " << player.getHP() << std::endl;
+    sBackground.setColor(sf::Color::Blue);
 
-    sf::RenderWindow GameWindow(screen, "STONAR");
     while (GameWindow.isOpen())
     {
         //The whole game
-        generateEnemies(enemies, gameClock, bossCreated); //Generate enemies
+        generateEnemies(enemies, gameClock, bossCreated, isFightingWithBoss); //Generate enemies
         standardHandleEvent(GameWindow);
         GameWindow.clear();
 
@@ -80,10 +77,10 @@ void createGame()
         GameWindow.draw(FPScounter);
         GameWindow.draw(scoreCounter);
 
-        //We check the player here
-        {
+        { //We check the player here
             GameWindow.draw(player.shape);
             GameWindow.draw(player.centerPoint);
+            player.healthBar->draw(GameWindow);
 
             if (player.isBlowingUp > 0)
             {
@@ -108,7 +105,7 @@ void createGame()
                     continue;
                 }
 
-                //If the bullet hit any enemy, we call e->takeDamge();
+                //If a bullet hit an enemy, we call e->takeDamage();
                 for (auto &e : enemies)
                     if (it->shape.getGlobalBounds().intersects(e->shape.getGlobalBounds()))
                     {
@@ -120,19 +117,23 @@ void createGame()
 
             //If press Z and player.canShoot() == true, so we shoot a bullet
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z) && player.canShoot())
-                player.shoot(1);
+                player.shoot(1, sf::Color::White);
             else if (!player.canShoot()) //if can't shoot, countDownShoot
                 player.countDownShoot();
         }
 
-        //We check enemies here
-        {
+        { //We check enemies here
             for (auto enemy = enemies.begin(); enemy != enemies.end(); enemy++)
             {
                 auto e = *enemy;
                 if (e->isDeath())
                 {
-                    float s = (e->type == boss ? 1000 : 50);
+                    float s = 50;
+                    if (e->type == boss)
+                    {
+                        s = 1000;
+                        isFightingWithBoss = false;
+                    }
                     score += s;
 
                     delete *enemy;
@@ -146,6 +147,7 @@ void createGame()
                 }
 
                 GameWindow.draw(e->shape);
+                e->healthBar->draw(GameWindow);
                 if (e->isBlowingUp > 0)
                 {
                     sExplosion.setPosition(e->shape.getPosition());
@@ -153,11 +155,22 @@ void createGame()
                     e->isBlowingUp--;
                 }
                 e->move();
+                if (e->shape.getGlobalBounds().intersects(player.shape.getGlobalBounds()))
+                {
+                    if (e->type == boss)
+                        player.takeDamage(e->getHP());
+                    else
+                    {
+                        player.takeDamage(player.getHP()/2);
+                        e->takeDamage(e->getHP());
+                    }
+                }
 
                 if (e->canShoot())
-                    e->shoot(e->type == boss ? 1 : 4);
+                    e->shoot(e->type == boss ? 1 : 4, sf::Color::White);
                 else
                     e->countDownShoot();
+
                 if (e->canAttackPlayer())
                     e->attack(player);
                 else if (e->type == boss)
@@ -194,7 +207,13 @@ void createGame()
 
         //The whole game
         if (isLost)
+        {
             gameOver(GameWindow);
+            break;
+        }
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Backspace))
+            break;
 
         if (int(modifyFPScount) % 400 == 0)
             modifyFPS(FPScounter, FPS);
@@ -208,12 +227,17 @@ void createGame()
 
         fpsClock.restart();
     }
+    sBackground.setColor(sf::Color::White);
 
     //If the programs run these code below, which means the game is over
     bossCreated = 0;
+    isFightingWithBoss = false;
+
     for (auto it = enemies.begin(); it != enemies.end(); it++)
         delete *it;
     enemies.clear();
+    currentMoney += score;
+    savePlayerInfo_ToFile("playerinfo.stn");
 }
 
 void modifyScore(sf::Text &txt, int score)
@@ -232,53 +256,57 @@ void gameOver(sf::RenderWindow &GameWindow)
 {
     sf::Text gameOver("GAME OVER" , gameFont, 50);
     gameOver.setStyle(sf::Text::Bold);
-    gameOver.setPosition(screen.width*1/4, screen.height/2);
+    gameOver.setPosition((screen.width - gameOver.getGlobalBounds().width)/2, (screen.height - gameOver.getGlobalBounds().height)/2);
     gameOver.setColor(sf::Color::Red);
 
     GameWindow.draw(gameOver);
     gameOverSound.play();
     GameWindow.display();
 
-    while (GameWindow.isOpen())
-    {
-        sf::Event e;
-        while (!(GameWindow.pollEvent(e) && (e.type == sf::Event::Closed || (e.type == sf::Event::KeyReleased && (e.key.code == sf::Keyboard::Enter || e.key.code == sf::Keyboard::Escape)))));
-        GameWindow.close();
-    }
+    sf::Event event;
+    while (!(GameWindow.pollEvent(event) && (event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::Return)));
 }
 
-void generateEnemies(Enemies &enemies, sf::Clock &gameClock, int &bossCreated)
+
+void generate1st_BossRound(Enemies &enemies, sf::Clock &gameClock, int &bossCreated, bool &isFightingWithBoss);
+void generate2nd_BossRound(Enemies &enemies, sf::Clock &gameClock, int &bossCreated, bool &isFightingWithBoss);
+void generate3rd_BossRound(Enemies &enemies, sf::Clock &gameClock, int &bossCreated, bool &isFightingWithBoss);
+
+void generateEnemies(Enemies &enemies, sf::Clock &gameClock, int &bossCreated, bool &isFightingWithBoss)
 {
-//    if (bossCreated > 0)
+    switch (bossCreated)
+    {
+    case 1:
+        generate1st_BossRound(enemies, gameClock, bossCreated, isFightingWithBoss);
+        break;
+    case 2:
+        generate2nd_BossRound(enemies, gameClock, bossCreated, isFightingWithBoss);
+        break;
+    case 3:
+        generate3rd_BossRound(enemies, gameClock, bossCreated, isFightingWithBoss);
+        break;
+    }
+//    if (!enemies.size())
 //    {
-//        std::cout << bossCreated << std::endl;
-//        for (auto e : enemies)
-//            if (e->type == boss)
-//            {
-//                std::cout << e->shape.getPosition().x << std::endl;
-//                std::cout << e->shape.getPosition().y << std::endl;
-//            }
+//        for (int i(0); i < 7 + bossCreated; i++)
+//        {
+//            int randNum = (rand() % 120); randNum += (randNum/2 + (rand() % 120));
+//            if (rand() % 2)
+//                randNum = -randNum;
+//            sf::Vector2f pos = { screen.width/2 + randNum, screen.height * 1/6 };
+//            enemies.push_back(new DarkSoldier(pos, sSoldierShape, sf::Vector2f(200.f*scale.x, 0.0f), 500));
+//        }
 //    }
-    if (!enemies.size() || (enemies.size() == 1 && enemies.at(0)->type == boss))
-    {
-        for (int i(0); i < 7; i++)
-        {
-            int randNum = rand() % 120;
-            if (rand() % 2)
-                randNum = -randNum;
-            sf::Vector2f pos = { screen.width/2 + randNum, screen.height * 1/6 };
-            enemies.push_back(new DarkSoldier(pos));
-        }
-    }
-
-    int secs = gameClock.getElapsedTime().asSeconds();
-    if (secs > 0 && secs % 5 == 0 && !bossCreated)
-    {
-        sf::Vector2f pos = { rand() % 600, 0 };
-
-        enemies.push_back(new Boss(sf::Vector2f(pos)));
-        bossCreated++;
-    }
+//
+//    int secs = gameClock.getElapsedTime().asSeconds();
+//    if (secs > 0 && secs % 5 == 0 && !isFightingWithBoss)
+//    {
+//        sf::Vector2f pos = { rand() % 600, 0 };
+//
+//        enemies.push_back(new Boss(pos, sBossShape, sf::Vector2f(150.0f*scale.x, 0.0f), 20000));
+//        bossCreated++;
+//        isFightingWithBoss = true;
+//    }
 }
 
 void standardHandleEvent(sf::RenderWindow &window)

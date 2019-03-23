@@ -23,6 +23,8 @@ void Character::takeDamage(int damage)
     if (healthPoint < 0)
         healthPoint = 0;
 
+    this->healthBar->makeBar(healthPoint);
+
     isBlowingUp = 300;
     explosionSound.play();
 };

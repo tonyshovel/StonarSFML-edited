@@ -41,7 +41,7 @@ public:
 
     void modifyColor(); //Make the center pointer becomes colorful by changing its color
     void move();
-    void shoot(int shot);
+    void shoot(int shot, sf::Color bulletColor);
 };
 
 #endif // _player_header

@@ -23,11 +23,14 @@ Contact:
 
 #include "stonar.h"
 #include "menu.h"
+#include "upgrade.h"
 #include "SFML/Graphics.hpp"
 
 int main()
 {
     srand(time(0));
+
+    loadPlayerInfo_FromFile("playerinfo.stn");
 
     std::cout << "Initialize sprites and textures" << std::endl;
     initSpritesAndTextures();
@@ -38,21 +41,17 @@ int main()
     std::cout << "Initialize sounds" << std::endl;
     initSounds();
 
-    std::cout << "Everything okay!" << std::endl;
     std::cout << "Stonar by Tony Shovel" << std::endl;
-    std::cout << "My Facebook account: tony.shovel.90" << std::endl;
+    std::cout << "My Facebook account: https://facebook.com/tony.shovel.90" << std::endl;
     std::cout << "My Gmail: hcthuynhcongtoai@gmail.com" << std::endl;
 
-    sf::Texture menuBK; menuBK.loadFromFile("img/menu.jpg");
-    sf::Sprite sMenuBK(menuBK); sMenuBK.setColor(sf::Color::Cyan);
-
-    sf::RenderWindow menuWindow(sf::VideoMode(500, 600), "Stonar by TonyShovel");
+    sf::RenderWindow menuWindow(screen, "Stonar by TonyShovel", sf::Style::Fullscreen);
     menuWindow.setMouseCursorVisible(false);
     Menu menu(menuWindow.getSize().x, menuWindow.getSize().y);
 
     sf::Font font; font.loadFromFile("font/BPPU.TTF");
 
-    sf::Text STONAR("STONAR", font, 70);
+    sf::Text STONAR("STONAR", font, 75*(scale.x + scale.y)/2);
     STONAR.setColor(sf::Color::Magenta);
     STONAR.setPosition((menuWindow.getSize().x - STONAR.getGlobalBounds().width)/2 , menuWindow.getSize().y * 1/5);
 
@@ -65,7 +64,7 @@ int main()
         mouseSprite.setPosition(mousePos);
 
         menuWindow.clear();
-        menuWindow.draw(sMenuBK);
+        menuWindow.draw(sBackground);
         menuWindow.draw(STONAR);
         menu.draw(menuWindow);
         menuWindow.draw(mouseSprite);
@@ -90,6 +89,12 @@ int main()
                 case sf::Keyboard::Down:
                     menu.MoveDown();
                     break;
+                }
+                delay(0.02);
+                break;
+            case sf::Event::KeyReleased:
+                switch (event.key.code)
+                {
                 case sf::Keyboard::Return:
                     option = menu.GetPressedItem();
                     break;
@@ -114,20 +119,19 @@ int main()
         switch (option)
         {
         case 0:
-            std::cout << std::endl << std::endl << std::endl << "Start Game !" << std::endl << std::endl << std::endl;
-            createGame();
-            //system("@cls || clear");
+            createGame(menuWindow);
             break;
         case 1:
+            createUpgradeMenu(menuWindow);
             break;
         case 2:
-            break;
-        case 3:
+            savePlayerInfo_ToFile("playerinfo.stn");
             menuWindow.close();
             break;
         }
         option = -1;
         menuWindow.display();
     }
+    savePlayerInfo_ToFile("playerinfo.stn");
     return 0;
 }

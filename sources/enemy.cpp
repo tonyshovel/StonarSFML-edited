@@ -23,12 +23,18 @@ Contact:
 #include "enemy.h"
 #include "stonar.h"
 
-DarkSoldier::DarkSoldier(sf::Vector2f pos = {0.0f, 0.0f})
+DarkSoldier::DarkSoldier(sf::Vector2f pos = {0.0f, 0.0f},
+                         sf::Sprite sprite = sSoldierShape,
+                         sf::Vector2f newVelocity = { 0.0f, 0.0f},
+                         int HP = 500)
 {
     this->type = darkSoldier;
-    this->healthPoint = 500;
-    this->velocity = sf::Vector2f(200.0f, 0.0f);
-    this->shape = sSoldierShape;
+    this->velocity = newVelocity;
+    this->shape = sprite;
+    this->healthPoint = HP;
+
+    sf::Vector2f hp_pos = sf::Vector2f(this->shape.getPosition().x, this->shape.getPosition().y + this->shape.getGlobalBounds().height + 10);
+    this->healthBar = new HealthBar(this->healthPoint, sf::Vector2f(this->shape.getGlobalBounds().width, 10), sf::Color::Yellow, hp_pos);
 
 	int lucky = rand() % 2;
 
@@ -42,29 +48,27 @@ void DarkSoldier::move()
     this->shape.move(this->velocity*TPF);
     auto pos = this->shape.getPosition();
 
-    if (pos.x <= -10 || pos.x >= screen.width)
+    if (pos.x <= -10 || pos.x >= screen.width || pos.y <= -10 || pos.y >= screen.height)
     {
         this->velocity = -this->velocity;
-        auto ve = this->velocity;
-
-        if (pos.x >= screen.width)
-            this->shape.setPosition(pos.x - (abs(ve.x)*TPF)*10, pos.y);
-        else
-            this->shape.setPosition(pos.x + (abs(ve.x)*TPF), pos.y);
+        this->shape.move(this->velocity*TPF);
     }
+    this->healthBar->setPosition(sf::Vector2f(this->shape.getPosition().x, this->shape.getPosition().y + this->shape.getGlobalBounds().height + 10));
 }
 
-void DarkSoldier::shoot(int shot = 1)
+void DarkSoldier::shoot(int shot = 1, sf::Color bulletColor = sf::Color::White)
 {
     for (int i(shot); i > 0; i--)
     {
         Bullet bullet;
         bullet.damage = 20;
-        bullet.velocity = { 0.0f, 200.0f };
+        bullet.velocity = { 0.0f, 200.0f*scale.y };
         bullet.shape = sSoldierBullet;
+        bullet.shape.setColor(bulletColor);
 
-        auto pos = this->shape.getPosition();
-        pos.y = pos.y + i*30.0f;
+        sf::Vector2f pos = { this->shape.getPosition().x + (this->shape.getGlobalBounds().width - bullet.shape.getGlobalBounds().width)/2,
+                             this->shape.getPosition().y + this->shape.getGlobalBounds().height};
+        pos.y = pos.y + i*30.0f*scale.y;
 
         bullet.shape.setPosition(pos);
         this->mainGun.push_back(bullet);
@@ -75,18 +79,28 @@ void DarkSoldier::shoot(int shot = 1)
 
 
 
-Boss::Boss(sf::Vector2f pos = { 0.0f, 0.0f })
+Boss::Boss(sf::Vector2f pos = {0.0f, 0.0f},
+                         sf::Sprite sprite = sBossShape,
+                         sf::Vector2f newVelocity = { 0.0f, 0.0f},
+                         int HP = 20000)
 {
-    this->attackCountDown = 100.0f;
     this->type = boss;
+    /*
+    this->shape = sprite;
+    this->healthPoint = HP;
+    this->velocity = newVelocity;*/
+    this->shape = sBossShape;
     this->healthPoint = 20000;
-    this->velocity = { 150.0f, 0.0f };
+    this->velocity = { 150.0f*scale.x, 0.0f };
 
     if (!(rand() % 2))
         this->velocity = -this->velocity;
 
     shape = sBossShape;
     shape.setPosition(pos);
+
+    sf::Vector2f hp_pos = sf::Vector2f(this->shape.getPosition().x, this->shape.getPosition().y + this->shape.getGlobalBounds().height + 10);
+    this->healthBar = new HealthBar(this->healthPoint, sf::Vector2f(this->shape.getGlobalBounds().width, 15), sf::Color::Magenta, hp_pos);
 }
 
 void Boss::move()
@@ -104,23 +118,24 @@ void Boss::move()
         else
             this->shape.setPosition(pos.x + (abs(ve.x)*TPF), pos.y);
     }
+    this->healthBar->setPosition(sf::Vector2f(this->shape.getPosition().x, this->shape.getPosition().y + this->shape.getGlobalBounds().height + 10));
 }
 
-void Boss::shoot(int shot = 1)
+void Boss::shoot(int shot = 1, sf::Color bulletColor = sf::Color::White)
 {
     for (int i(shot); i > 0; i--)
     {
         Bullet bullet;
         bullet.damage = 60;
-        bullet.velocity = { 0.0f, 160.0f };
+        bullet.velocity = { 0.0f, 160.0f*(scale.x + scale.y)/2 };
         bullet.shape = sSoldierBullet;
+        bullet.shape.setColor(bulletColor);
 
-        auto pos = this->shape.getPosition();
-        pos.x = pos.x + 820*0.15 / 2;
-        pos.y = pos.y + 969*0.15 + i*100.0f;
+        sf::Vector2f pos = { this->shape.getPosition().x + (this->shape.getGlobalBounds().width - bullet.shape.getGlobalBounds().width)/2,
+                             this->shape.getPosition().y + (this->shape.getGlobalBounds().height - bullet.shape.getGlobalBounds().height)/2 };
 
         bullet.shape.setPosition(pos);
-        bullet.shape.setColor(sf::Color::Blue);
+        bullet.shape.setColor(sf::Color::Magenta);
 
         this->mainGun.push_back(bullet);
     }
@@ -134,13 +149,14 @@ void Boss::attack(Player &target)
     bullet.shape = sSoldierBullet;
     bullet.shape.setColor(sf::Color::Cyan);
 
-    auto pos = this->shape.getPosition();
-    bullet.shape.setPosition(pos.x + 820*0.15 / 2, pos.y + 969*0.15);
+    sf::Vector2f pos = { this->shape.getPosition().x + (this->shape.getGlobalBounds().width - bullet.shape.getGlobalBounds().width)/2,
+                         this->shape.getPosition().y + (this->shape.getGlobalBounds().height - bullet.shape.getGlobalBounds().height)/2 };
+    bullet.shape.setPosition(pos);
 
     //Flying direction of bullet
     sf::Vector2f aimDir = target.centerPoint.getPosition() - bullet.shape.getPosition();
     sf::Vector2f aimDirNorm = aimDir / float(sqrt((aimDir.x * aimDir.x, aimDir.y * aimDir.y)));
-    bullet.velocity = aimDirNorm * 250.0f;
+    bullet.velocity = aimDirNorm * (250.0f * (scale.x + scale.y)/2);
 
 //  Change the bullet flying direction a bit
     float x = float(rand() % 11) / 100;

@@ -10,7 +10,7 @@ Menu::Menu(float width, float height)
     loadFromFile("items.txt");
     for (int i(0); i < strs.size(); i++)
     {
-        sf::Text txt(strs.at(i), font, 24);
+        sf::Text txt(strs.at(i), font, 30*(scale.x + scale.y)/2);
         txt.setColor(i == selectedItemIndex ? sf::Color::Red : sf::Color::White);
         txt.setStyle(i == selectedItemIndex ? sf::Text::Bold : sf::Text::Regular);
         txt.setPosition(sf::Vector2f(width/5, i*txt.getCharacterSize() + (2*height)/3));

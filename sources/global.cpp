@@ -20,46 +20,48 @@ Tony Shovel (Huynh Cong Toai), 13:55 Third of February, 2019
 #include <string>
 #include "SFML/Graphics.hpp"
 
-sf::VideoMode screen(800, 600);
+float FPS = 1;
+float TPF = 1;
+
+sf::VideoMode screen = sf::VideoMode::getDesktopMode();
+sf::Vector2f scale = sf::Vector2f(float(screen.width)/1366, float(screen.height)/768);
 sf::Texture background, playerShip, laser, soldierBullet, mouseTexture, bossShape, explosion, soldierShape;
 sf::Sprite sBackground, sPlayerShip, sLaser, sSoldierBullet, mouseSprite, sBossShape, sExplosion, sSoldierShape;
 
 void initSpritesAndTextures()
 {
-    background.loadFromFile("img/background.jpg"); ///800x600
-    sBackground.setTexture(background); sBackground.setColor(Color(Color::Cyan));
+    background.loadFromFile("img/background.jpg"); ///1366x768
+    sBackground.setTexture(background);
+    sBackground.setScale(scale);
 
 	explosion.loadFromFile("img/explosion.png"); ///79x73
 	sExplosion.setTexture(explosion);
+	sExplosion.setScale(scale);
 
-	soldierShape.loadFromFile("img/darkSoldier.png"); ///343x383
+	soldierShape.loadFromFile("img/darkSoldier_3.png"); ///343x383
 	sSoldierShape.setTexture(soldierShape);
-	sSoldierShape.scale(0.2, 0.2);///68.6x76.6
+	sSoldierShape.scale(0.2*scale.x, 0.2*scale.y);///68.6x76.6
 
 	soldierBullet.loadFromFile("img/fireball.png");///184x182
 	sSoldierBullet.setTexture(soldierBullet);
-	sSoldierBullet.scale(0.1, 0.1);///18.4x18.2
+	sSoldierBullet.scale(0.1*scale.x, 0.1*scale.y);///18.4x18.2
 
-	bossShape.loadFromFile("img/boss.png"); ///820x969
+	bossShape.loadFromFile("img/boss_2.png"); ///820x969
 	sBossShape.setTexture(bossShape);
-	sBossShape.scale(0.15, 0.15);///123x145.35
+	sBossShape.scale(0.4*scale.x, 0.4*scale.y);///123x145.35
 
     playerShip.loadFromFile("img/player.png");///173x291
     sPlayerShip.setTexture(playerShip);
-    sPlayerShip.scale(playerScale, playerScale);///51.9x87.3
+    sPlayerShip.scale(0.3*scale.x, 0.3*scale.y);///51.9x87.3
 
     laser.loadFromFile("img/laser.png");///90x512
     sLaser.setTexture(laser);
-    sLaser.scale(0.1, 0.07);///9x35x84
+    sLaser.scale(0.1*scale.x, 0.07*scale.y);///9x35x84
 
     mouseTexture.loadFromFile("img/mouse.png"); ///874x886
     mouseSprite.setTexture(mouseTexture);
-    mouseSprite.scale(0.05, 0.05);
+    mouseSprite.scale(0.05*scale.x, 0.05*scale.y);
 }
-
-int spaceShip_width = 173;
-int spaceShip_height = 291;
-float playerScale = 0.3;
 
 
 sf::Font gameFont;
@@ -79,13 +81,18 @@ void initFonts()
     }
 }
 
-sf::SoundBuffer gunBuffer, gameOverBuffer, explosionBuffer, selectBuffer;
-sf::Sound gunSound, gameOverSound, explosionSound, selectSound;
+sf::SoundBuffer gunBuffer, gameOverBuffer, explosionBuffer, selectBuffer, destroyedBuffer;
+sf::Sound gunSound, gameOverSound, explosionSound, selectSound, destroyedSound;
 
 void initSounds()
 {
+    destroyedBuffer.loadFromFile("sounds/destroyed.wav");
+    destroyedSound.setBuffer(destroyedBuffer);
+    destroyedSound.setPlayingOffset(sf::seconds(0.5f));
+
     gunBuffer.loadFromFile("sounds/laser.wav");
     gunSound.setBuffer(gunBuffer);
+    gunSound.setVolume(50.0f);
 
     gameOverBuffer.loadFromFile("sounds/lost.wav");
     gameOverSound.setBuffer(gameOverBuffer);

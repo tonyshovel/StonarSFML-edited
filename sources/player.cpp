@@ -22,6 +22,7 @@ Contact:
 
 #include "player.h"
 #include "bullet.h"
+#include "stonar.h"
 
 #include "SFML/Graphics.hpp"
 #include <windows.h>
@@ -33,15 +34,21 @@ Color colorList[8] = {Color::Yellow, Color::White, Color::Red, Color::Magenta, C
 Player::Player()
 {
     this->shootCountdown = 0;
-    this->healthPoint = 100;
+    this->healthPoint = 200;
     this->isBlowingUp = 0;
     this->shape = sPlayerShip;
-    this->shape.setPosition(int(float(screen.width - spaceShip_width*playerScale)/2), int(float(screen.height)* 4/5));
+    this->shape.setPosition((screen.width - this->shape.getGlobalBounds().width)/2, screen.height* 4/5);
     this->color = 0;
-    this->speed = 530; //Move 500 pixels for each second
+    this->speed = 530.0f*(scale.x + scale.y)/2; //Move 500 pixels for each second
 
-    this->centerPoint.setRadius(10*playerScale);
-    this->centerPoint.setPosition(76*playerScale + this->shape.getPosition().x, 174*playerScale + this->shape.getPosition().y);
+    sf::Vector2f hp_pos = sf::Vector2f(this->shape.getPosition().x, this->shape.getPosition().y + this->shape.getGlobalBounds().height + 10);
+    this->healthBar = new HealthBar(this->healthPoint, sf::Vector2f(this->shape.getGlobalBounds().width, 10), sf::Color::Red, hp_pos);
+
+    float spriteScale = this->shape.getGlobalBounds().width/this->shape.getLocalBounds().width;
+
+    this->centerPoint.setRadius(10*spriteScale);
+    this->centerPoint.setPosition((this->shape.getGlobalBounds().width - centerPoint.getGlobalBounds().width)/2 + this->shape.getPosition().x,
+                                  (this->shape.getGlobalBounds().height/2) + this->shape.getPosition().y);
     this->centerPoint.setFillColor(Color(Color::Yellow));
 }
 
@@ -62,26 +69,29 @@ void Player::move() ///<If player pressed any arrow keys, the spaceship move
 
     if (up && (pos.y - this->speed*TPF) >= 0)
         this->shape.move(0, -this->speed*TPF);
-    else if (down && (spaceShip_height*playerScale + this->speed*TPF + pos.y) <= screen.height)
+    else if (down && (this->shape.getGlobalBounds().height + this->speed*TPF + pos.y) <= screen.height)
         this->shape.move(0, this->speed*TPF);
     else if (left && (pos.x - this->speed*TPF) >= 0)
         this->shape.move(-this->speed*TPF, 0);
-    else if (right && (spaceShip_width*playerScale + this->speed*TPF + pos.x) <= screen.width)
+    else if (right && (this->shape.getGlobalBounds().width + this->speed*TPF + pos.x) <= screen.width)
         this->shape.move(this->speed*TPF, 0);
 
-    pos = this->shape.getPosition();
-    this->centerPoint.setPosition(76*playerScale + pos.x, 174*playerScale + pos.y);
+    float spriteScale = this->shape.getGlobalBounds().width/this->shape.getLocalBounds().width;
+    this->centerPoint.setPosition((this->shape.getGlobalBounds().width - centerPoint.getGlobalBounds().width)/2 + this->shape.getPosition().x,
+                                  (this->shape.getGlobalBounds().height/2) + this->shape.getPosition().y);
+    this->healthBar->setPosition(sf::Vector2f(this->shape.getPosition().x, this->shape.getPosition().y + this->shape.getGlobalBounds().height + 10));
 }
 
-void Player::shoot(int shot = 1)
+void Player::shoot(int shot = 1, sf::Color bulletColor = sf::Color::White)
 {
     for (int i(shot); i > 0; i--)
     {
         Bullet b;
         b.shape = sLaser;
-        b.velocity = {0.0f, -800.0f}; //move 800 per a second
+        b.velocity = {0.0f, -800.0f*scale.y}; //move 800 per a second
         b.shape.setPosition(centerPoint.getPosition().x, centerPoint.getPosition().y - i*60.0f);
-        b.damage = 50;
+        b.damage = playerDamage;
+        b.shape.setColor(bulletColor);
 
         this->mainGun.push_back(b);
         gunSound.play();

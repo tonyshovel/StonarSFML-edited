@@ -3,6 +3,7 @@
 
 
 #include "bullet.h"
+#include "healthbar.h"
 
 class Character
 {
@@ -12,6 +13,7 @@ protected:
 public:
     int isBlowingUp;
     sf::Sprite shape;
+    HealthBar *healthBar;
 
     Shooter mainGun;
 public:
@@ -25,7 +27,7 @@ public:
     int getHP() { return healthPoint; }
 
     virtual void move() = 0;
-    virtual void shoot(int shot) = 0;
+    virtual void shoot(int shot, sf::Color bulletColor) = 0;
 };
 
 #endif // _character_header

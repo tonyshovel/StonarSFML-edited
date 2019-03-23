@@ -36,27 +36,34 @@ using namespace sf;
 
 extern sf::VideoMode screen; ///<The game window size
 
-extern float playerScale; ///<The picture in "img" folder is really big, so we use scale to make it smaller
-extern int spaceShip_width; ///<The spaceship's picture width
-extern int spaceShip_height; ///<The spaceship's picture height
-
 extern sf::Font gameFont;
 extern sf::Font menuFont;
 
 extern sf::Texture background, playerShip, laser, soldierBullet, mouseTexture, explosion, /*Enemy*/ bossShape, soldierShape;
 extern sf::Sprite sBackground, sPlayerShip, sLaser, sSoldierBullet, mouseSprite, sExplosion, /*Enemy*/ sBossShape, sSoldierShape;
-extern sf::SoundBuffer gunBuffer, gameOverBuffer, explosionBuffer, selectBuffer;
-extern sf::Sound gunSound, gameOverSound, explosionSound, selectSound;
+extern sf::SoundBuffer gunBuffer, gameOverBuffer, explosionBuffer, selectBuffer, destroyedBuffer;
+extern sf::Sound gunSound, gameOverSound, explosionSound, selectSound, destroyedSound;
 
 extern float FPS;
 extern float TPF;
+extern sf::Vector2f scale;
+
+extern std::string playerName;
+extern int playerDamage;
+extern int currentMoney;
+extern int next_Level_Upgrading_Requirement;
 /*Global functions*/
 
 void initSpritesAndTextures();
 void initFonts();
 void initSounds();
 
-void createGame();
+void createGame(sf::RenderWindow &window);
 void delay(float secs);
+
+void standardHandleEvent(sf::RenderWindow &window);
+
+void loadPlayerInfo_FromFile(std::string path);
+void savePlayerInfo_ToFile(std::string path);
 
 #endif // _stonar_header
